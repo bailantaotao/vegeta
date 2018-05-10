@@ -252,6 +252,11 @@ func (a *Attacker) hit(tr Targeter, tm time.Time) *Result {
 		return &res
 	}
 
+	if tgt.CustomPolicy != nil {
+		err = tgt.CallCustomPolicy()
+		return &res
+	}
+
 	req, err := tgt.Request()
 	if err != nil {
 		return &res

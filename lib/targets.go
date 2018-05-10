@@ -21,6 +21,7 @@ type Target struct {
 	URL    string
 	Body   []byte
 	Header http.Header
+	CustomPolicy func() error
 }
 
 // Request creates an *http.Request out of Target and returns it along with an
@@ -40,6 +41,10 @@ func (t *Target) Request() (*http.Request, error) {
 	return req, nil
 }
 
+func (t *Target) CallCustomPolicy() error {
+	return t.CustomPolicy()
+}
+
 var (
 	// ErrNoTargets is returned when not enough Targets are available.
 	ErrNoTargets = errors.New("no targets to attack")
@@ -50,6 +55,17 @@ var (
 // A Targeter decodes a Target or returns an error in case of failure.
 // Implementations must be safe for concurrent use.
 type Targeter func(*Target) error
+
+func NewGethTarget(tgts ...Target) Targeter {
+	i := int64(-1)
+	return func(tgt *Target) error {
+		if tgt == nil {
+			return ErrNilTarget
+		}
+		*tgt = tgts[atomic.AddInt64(&i, 1)%int64(len(tgts))]
+		return nil
+	}
+}
 
 // NewStaticTargeter returns a Targeter which round-robins over the passed
 // Targets.
