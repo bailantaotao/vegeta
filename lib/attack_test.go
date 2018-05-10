@@ -13,6 +13,24 @@ import (
 	"time"
 )
 
+func TestAttackCustomFunction(t *testing.T) {
+	t.Parallel()
+	rate := uint64(100)
+	nonce := 0
+	var hits uint64
+	tr := NewGethTarget(Target{CustomPolicy: func() error {
+		nonce++
+		return nil
+	}})
+	atk := NewAttacker()
+	for range atk.Attack(tr, rate, 1*time.Second) {
+		hits++
+	}
+	if got, want := hits, rate; got != want {
+		t.Fatalf("got: %v, want: %v", got, want)
+	}
+}
+
 func TestAttackRate(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(
